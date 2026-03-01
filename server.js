@@ -1,6 +1,5 @@
 require('dotenv').config();
 const express = require('express');
-const compression = require('compression');
 const session = require('express-session');
 const path = require('path');
 
@@ -8,7 +7,6 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.set('trust proxy', 1);
-app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 
 app.use(session({
@@ -72,7 +70,7 @@ async function callSheetsAPI(action, params = {}) {
     let url = `${SHEETS_API_URL}?action=${encodeURIComponent(action)}`;
 
     if (process.env.SHEETS_API_KEY) {
-        url += `&token=${encodeURIComponent(process.env.SHEETS_API_KEY)}`;
+        url += `&key=${encodeURIComponent(process.env.SHEETS_API_KEY)}`;
     }
 
     if (params.data) {

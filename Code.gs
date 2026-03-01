@@ -12,9 +12,9 @@
 
 // ---- API key validation ----
 function validateKey(e) {
-  var token = (e && e.parameter && e.parameter.token) ? e.parameter.token : '';
+  var key = (e && e.parameter && e.parameter.key) ? e.parameter.key : '';
   var secret = PropertiesService.getScriptProperties().getProperty('SECRET_KEY');
-  if (secret && token !== secret) {
+  if (secret && key !== secret) {
     return false;
   }
   return true;

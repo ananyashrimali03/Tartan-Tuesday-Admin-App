@@ -172,7 +172,7 @@ function getContiguousRun(sorted) {
     if (sorted.length <= 1) return sorted;
     const result = [sorted[sorted.length - 1]];
     for (let i = sorted.length - 2; i >= 0; i--) {
-        const gap = (new Date(sorted[i + 1].date + 'T12:00:00') - new Date(sorted[i].date + 'T12:00:00')) / 86400000;
+        const gap = (new Date(sorted[i + 1].date) - new Date(sorted[i].date)) / 86400000;
         if (gap > 21) break;
         result.unshift(sorted[i]);
     }
@@ -185,32 +185,11 @@ function getNextTuesday() {
     return d.toISOString().split('T')[0];
 }
 
-function normalizeDate(s) {
-    if (!s || s === '#N/A' || s === 'undefined' || s === 'null') return null;
-    const str = String(s).trim();
-    if (!str) return null;
-    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
-    const slash = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (slash) {
-        return `${slash[3]}-${slash[1].padStart(2,'0')}-${slash[2].padStart(2,'0')}`;
-    }
-    const d = new Date(str);
-    if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
-    return null;
-}
-
 function fmtDateLabel(s) {
-    const iso = normalizeDate(s);
-    if (!iso) return 'N/A';
-    return new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return new Date(s + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 // ── Data Processing ──
-
-function cleanSwipes(swipes) {
-    return swipes.map(s => ({ ...s, date: normalizeDate(s.date) || s.date }))
-                 .filter(s => s.date && s.date !== '#N/A' && /^\d{4}-\d{2}-\d{2}$/.test(s.date));
-}
 
 function getAttendanceByDate(swipes) {
     const m = {};
@@ -456,7 +435,7 @@ function TartanTuesdayApp() {
             .then(data => {
                 if (data && !data.error) {
                     if (data.students?.length > 0) setStudents(data.students);
-                    if (data.swipes) setSwipes(cleanSwipes(data.swipes));
+                    if (data.swipes) setSwipes(data.swipes);
                     setSyncStatus('success');
                     setSyncMessage('Synced with Google Sheets');
                     setTimeout(() => setSyncStatus('idle'), 3000);
@@ -1631,7 +1610,7 @@ function TartanTuesdayApp() {
                                         const data = await apiFetch('/api/data');
                                         if (data && !data.error) {
                                             if (data.students?.length > 0) setStudents(data.students);
-                                            if (data.swipes) setSwipes(cleanSwipes(data.swipes));
+                                            if (data.swipes) setSwipes(data.swipes);
                                             showAlert(`Refreshed: ${data.students?.length || 0} students, ${data.swipes?.length || 0} swipes`, 'success');
                                             setSyncStatus('success'); setSyncMessage('Synced');
                                             setTimeout(() => setSyncStatus('idle'), 2000);
