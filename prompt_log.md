@@ -1316,19 +1316,12 @@ The `derivedStats` block runs only when `activeTab === 'statistics'`. It compute
 
 ---
 
-#### History Tab
-
-- **Search bar** — Filters by first name, last name, or ID.
-- **Sortable table** — Columns: ID, Name, Email, Visits, Earned, Redeemed, Balance, Last Visit; click header to sort (except Email).
-
----
-
 #### Data Management Tab
 
 - **Import Student Roster** — File input for Excel with "Students" sheet.
 - **Import Existing Swipes** — File input for Excel with "Swipes" sheet; appends to current data.
-- **Export All Data to Excel** — Downloads swipes as Excel.
-- **Refresh from Google Sheets** — Calls `SheetsAPI.loadAllData()`, updates students and swipes.
+- **Export All Data to Excel** — Downloads swipes as Excel (PII masked).
+- **Refresh from Google Sheets** — Calls `apiFetch('/api/data')`, updates students and swipes.
 - **Current Data Status** — Displays counts: students, swipes, recent activities, sync status.
 - **Data Comparison Sheet** — Info box + "Rebuild Comparison Sheet from All Swipes" button; POSTs to `/api/comparison/sync`.
 - **Important Notes** — Bullet list of sync and import behavior.
@@ -1337,10 +1330,61 @@ The `derivedStats` block runs only when `activeTab === 'statistics'`. It compute
 
 #### Global UI Elements
 
+- **Login screen** — Shown when not authenticated; email/password form posting to `/api/login`.
 - **Loading overlay** — Shown during `isInitialLoading`.
 - **Sync toast** — Shows status/message when `syncStatus !== 'idle'`.
-- **Topbar** — Logo, title, today's check-ins count, link to `/charts.html`.
+- **Topbar** — Logo, title, today's check-ins count, link to `/charts.html`, logout button.
 - **Hero** — Title, subtitle, four stat boxes (unique students, total visits, points earned, prizes redeemed).
-- **Tab buttons** — Check-In, Redeem Prize, Statistics, Student History, Data Management.
+- **Tab buttons** — Check-In, Redeem Prize, Statistics, Data Management.
 - **Alert** — Toast for success/error/warning/info.
 - **Footer** — Copyright and attribution.
+
+---
+
+### Phase 12: Security & Authentication
+
+**Prompt 28**: "Now, i'll be deploying this app through github and render. The source code will be openly available. How can I make sure that my dataset from google sheets will still be secure?"
+
+**Prompt 29**: "I wish to create a simple email id password login as well to prevent the data breach"
+
+**Prompt 30**: "APP_LOGIN APP_PASSWORD are setup in the .env file and I have given the login email and login password here include that in your plan"
+
+#### Changes Made
+
+1. **Admin Login (server.js)**
+   - Added `express-session` middleware for cookie-based sessions (12-hour expiry).
+   - `POST /api/login` — Validates email/password against `APP_LOGIN` and `APP_PASSWORD` from `.env`.
+   - `GET /api/me` — Returns authentication status (used by frontend on page load).
+   - `GET /api/logout` — Destroys session.
+   - `requireAuth` middleware protects all `/api/*` routes except login.
+
+2. **Frontend Secret Removal (app.js)**
+   - Removed hardcoded `SHEETS_API_URL`, `SYNC_ENABLED`, and the entire `SheetsAPI` object.
+   - All API calls now go through the Express server via `apiFetch('/api/...')`.
+   - Added `LoginScreen` component and `AppRoot` wrapper that checks `/api/me` on load.
+   - Added logout button to the topbar.
+
+3. **API Key on Google Apps Script (Code.gs)**
+   - Added `validateKey(e)` function that checks `e.parameter.key` against `PropertiesService.getScriptProperties().getProperty('SECRET_KEY')`.
+   - Both `doGet` and `doPost` reject requests with invalid keys.
+   - Server appends `&key=...` to every outbound request using `SHEETS_API_KEY` from `.env`.
+
+4. **Git History Scrubbed**
+   - Created a clean orphan branch to eliminate the old exposed Apps Script URL from git history.
+   - Old commits (containing the raw URL) are no longer reachable.
+
+5. **Environment Variables (`.env`)**
+   - `SHEETS_API_URL` — Google Apps Script deployment URL (server-side only).
+   - `APP_LOGIN` — Admin email for login.
+   - `APP_PASSWORD` — Admin password for login.
+   - `SESSION_SECRET` — Cookie signing secret.
+   - `SHEETS_API_KEY` — Shared secret sent with every Sheets API call.
+
+#### Setup Instructions for Google Apps Script
+
+After deploying the updated `Code.gs`:
+
+1. In the Apps Script editor, go to **Project Settings** (gear icon).
+2. Scroll to **Script Properties** and click **Add script property**.
+3. Set **Property**: `SECRET_KEY`, **Value**: the same value as `SHEETS_API_KEY` in your `.env` file.
+4. Click **Save**, then create a **New Deployment** (Deploy > New Deployment).

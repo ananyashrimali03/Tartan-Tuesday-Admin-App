@@ -476,8 +476,7 @@ function TartanTuesdayApp() {
     }, [activeTab]);
 
     useEffect(() => {
-        fetch('/api/inventory')
-            .then(r => r.json())
+        apiFetch('/api/inventory')
             .then(data => { if (Array.isArray(data)) setInventory(data); })
             .catch(() => {});
     }, []);
@@ -1057,20 +1056,24 @@ function TartanTuesdayApp() {
                     <p>Carnegie Mellon University · Student Engagement</p>
                     <div className="hero-stats">
                         <div className="hero-stat-box">
+                            <div className="stat-num">{stats.todayVisits}</div>
+                            <div className="stat-lbl">Checked in today</div>
+                            <div className="stat-ctx">{students.length} in roster</div>
+                        </div>
+                        <div className="hero-stat-box">
                             <div className="stat-num">{stats.uniqueStudents}</div>
-                            <div className="stat-lbl">Unique Students</div>
+                            <div className="stat-lbl">Students this year</div>
+                            <div className="stat-ctx">{stats.totalVisits > 0 && stats.uniqueStudents > 0 ? (stats.totalVisits / stats.uniqueStudents).toFixed(1) : '0'} avg visits each</div>
                         </div>
                         <div className="hero-stat-box">
-                            <div className="stat-num">{stats.totalVisits}</div>
-                            <div className="stat-lbl">Total Visits</div>
+                            <div className="stat-num">{stats.totalPointsEarned - stats.totalPointsRedeemed}</div>
+                            <div className="stat-lbl">Points in circulation</div>
+                            <div className="stat-ctx">{stats.totalPointsRedeemed} redeemed so far</div>
                         </div>
                         <div className="hero-stat-box">
-                            <div className="stat-num">{stats.totalPointsEarned}</div>
-                            <div className="stat-lbl">Points Earned</div>
-                        </div>
-                        <div className="hero-stat-box">
-                            <div className="stat-num">{stats.prizesRedeemed}</div>
-                            <div className="stat-lbl">Prizes Redeemed</div>
+                            <div className="stat-num">{inventory.reduce((s, i) => s + (i.quantity || 0), 0)}</div>
+                            <div className="stat-lbl">Prizes in stock</div>
+                            <div className="stat-ctx">{stats.prizesRedeemed} given out</div>
                         </div>
                     </div>
                 </div>
