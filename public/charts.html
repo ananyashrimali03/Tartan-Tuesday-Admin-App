@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tartan Tuesday — Comparison Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;0,8..60,700;0,8..60,900;1,8..60,400&family=Open+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f4f4f4;
+            color: #1a1a1a;
+            min-height: 100vh;
+        }
+
+        /* ── TOPBAR ── */
+        .topbar {
+            background: #fff;
+            border-bottom: 3px solid #9B1B30;
+            padding: 0 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 68px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .topbar-brand { display: flex; align-items: center; gap: 14px; }
+        .topbar-logo {
+            width: 44px; height: 44px;
+            object-fit: contain;
+            display: block;
+            flex-shrink: 0;
+        }
+        .topbar-title { font-family: 'Source Serif 4', Georgia, serif; font-size: 1.2em; font-weight: 700; color: #1a1a1a; letter-spacing: 1px; }
+        .topbar-subtitle { font-size: 0.72em; color: #888; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+        .topbar-right { display: flex; align-items: center; gap: 16px; }
+        .topbar-nav-link {
+            padding: 8px 18px; border-radius: 6px; font-size: 0.82em; font-weight: 700;
+            letter-spacing: 0.5px; text-transform: uppercase; text-decoration: none;
+            transition: all 0.2s;
+        }
+        .topbar-nav-link.secondary { color: #555; border: 2px solid #e8e8e8; background: #fff; }
+        .topbar-nav-link.secondary:hover { border-color: #9B1B30; color: #9B1B30; }
+        .topbar-nav-link.primary { color: #fff; background: linear-gradient(135deg, #9B1B30, #7A1425); box-shadow: 0 4px 12px rgba(155,27,48,0.3); }
+
+        /* ── HERO ── */
+        .hero {
+            background:
+                linear-gradient(135deg, rgba(30,10,15,0.72) 0%, rgba(94,15,28,0.60) 100%),
+                url('/tartan-bg.png') center/cover no-repeat;
+            padding: 44px 40px 64px;
+            position: relative; overflow: hidden;
+        }
+        .hero::after {
+            content: ''; position: absolute; bottom: -2px; left: 0; right: 0;
+            height: 48px; background: #f4f4f4;
+            clip-path: polygon(0 100%, 100% 100%, 100% 0);
+        }
+        .hero::before {
+            content: ''; position: absolute; top: -60px; right: -60px;
+            width: 280px; height: 280px; border-radius: 50%;
+            background: rgba(255,255,255,0.06);
+        }
+        .hero-inner { max-width: 1300px; margin: 0 auto; position: relative; z-index: 1; }
+        .hero h1 { font-family: 'Source Serif 4', Georgia, serif; color: #fff; font-size: 2.4em; font-weight: 700; letter-spacing: 2px; margin-bottom: 6px; text-shadow: 0 2px 16px rgba(0,0,0,0.7), 0 1px 4px rgba(0,0,0,0.9); }
+        .hero p { color: rgba(255,255,255,0.92); font-size: 0.95em; letter-spacing: 2px; text-transform: uppercase; font-weight: 500; text-shadow: 0 1px 8px rgba(0,0,0,0.7); }
+
+        /* ── BODY ── */
+        .page-body { max-width: 1300px; margin: -28px auto 0; padding: 0 40px 60px; position: relative; z-index: 2; }
+
+        /* ── CONTROLS BAR ── */
+        .controls-bar {
+            background: #fff; border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            padding: 18px 24px;
+            display: flex; align-items: center; gap: 16px;
+            flex-wrap: wrap; margin-bottom: 24px;
+            border: 1px solid #f0f0f0;
+        }
+        .controls-label { font-size: 0.78em; font-weight: 800; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+        .chart-type-btns { display: flex; gap: 8px; }
+        .chart-type-btn {
+            padding: 8px 18px; border-radius: 6px; border: 2px solid #e8e8e8;
+            background: #fafafa; font-size: 0.82em; font-weight: 700;
+            cursor: pointer; transition: all 0.2s; color: #555;
+            letter-spacing: 0.5px; text-transform: uppercase;
+        }
+        .chart-type-btn:hover { border-color: #9B1B30; color: #9B1B30; }
+        .chart-type-btn.active { background: #9B1B30; color: #fff; border-color: #9B1B30; box-shadow: 0 4px 12px rgba(155,27,48,0.3); }
+        .divider { width: 1px; height: 32px; background: #f0f0f0; }
+        .legend-toggles { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .legend-chip {
+            display: flex; align-items: center; gap: 6px;
+            padding: 6px 12px; border-radius: 20px; border: 2px solid;
+            font-size: 0.78em; font-weight: 700; cursor: pointer;
+            transition: all 0.2s; user-select: none; letter-spacing: 0.3px;
+        }
+        .legend-chip .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .legend-chip.muted { opacity: 0.35; }
+
+        /* ── MAIN CHART CARD ── */
+        .chart-card {
+            background: #fff; border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+            border: 1px solid #f0f0f0; border-left: 4px solid #9B1B30;
+            padding: 28px 28px 20px; margin-bottom: 24px;
+        }
+        .chart-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
+        .chart-card-title { font-size: 1.05em; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #1a1a1a; }
+        .chart-card-subtitle { font-size: 0.82em; color: #888; margin-top: 3px; font-weight: 500; }
+        .chart-wrap { position: relative; height: 420px; }
+
+        /* ── STAT CARDS ── */
+        .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+        @media (max-width: 900px) { .stat-row { grid-template-columns: repeat(2, 1fr); } }
+        .stat-card {
+            background: #fff; padding: 22px 20px; border-radius: 10px;
+            border: 1px solid #f0f0f0; border-top: 4px solid #9B1B30;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(155,27,48,0.1); }
+        .stat-card:nth-child(2n) { border-top-color: #5E0F1C; }
+        .stat-val { font-size: 2.4em; font-weight: 900; color: #9B1B30; line-height: 1; margin-bottom: 6px; }
+        .stat-lbl { font-size: 0.75em; color: #999; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* ── MINI CHARTS ROW ── */
+        .mini-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+        @media (max-width: 900px) { .mini-row { grid-template-columns: 1fr; } }
+        .mini-chart-card {
+            background: #fff; border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+            border: 1px solid #f0f0f0; border-left: 4px solid #9B1B30;
+            padding: 22px 22px 16px;
+        }
+        .mini-chart-wrap { position: relative; height: 220px; }
+
+        /* ── TABLE ── */
+        .table-card {
+            background: #fff; border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+            border: 1px solid #f0f0f0; border-left: 4px solid #9B1B30;
+            padding: 24px;
+        }
+        .table-card h2 {
+            font-size: 1.05em; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 1px; color: #1a1a1a; margin-bottom: 16px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .table-card h2::before { content: ''; display: inline-block; width: 5px; height: 18px; background: #9B1B30; border-radius: 3px; flex-shrink: 0; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.88em; overflow-x: auto; display: block; }
+        .data-table th {
+            background: #f9f9f9; padding: 11px 14px; text-align: center;
+            font-weight: 800; color: #555; text-transform: uppercase;
+            font-size: 0.78em; letter-spacing: 0.8px; white-space: nowrap;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .data-table th:first-child { text-align: left; }
+        .data-table td {
+            padding: 11px 14px; text-align: center;
+            border-bottom: 1px solid #f0f0f0; color: #333; font-weight: 500;
+        }
+        .data-table td:first-child { font-weight: 700; text-align: left; }
+        .data-table tr:hover td { background: #fdf2f4; }
+        .data-table tr:last-child td { border-bottom: none; }
+        .cell-bar {
+            display: flex; align-items: center; gap: 8px; justify-content: center;
+        }
+        .cell-bar-fill {
+            height: 6px; border-radius: 3px; background: #9B1B30; min-width: 2px;
+            transition: width 0.3s;
+        }
+
+        /* ── LOADING / ERROR ── */
+        .state-overlay {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 300px; gap: 16px; color: #888;
+        }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(155,27,48,0.2);
+            border-top-color: #9B1B30;
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .state-overlay h3 { color: #555; font-size: 1em; font-weight: 700; }
+        .state-overlay p { font-size: 0.85em; max-width: 400px; text-align: center; line-height: 1.6; }
+        .error-box { background: #fdf2f4; border: 2px solid #e8a0ac; border-left: 4px solid #9B1B30; border-radius: 8px; padding: 16px 20px; }
+        .error-box pre { font-size: 0.82em; color: #5E0F1C; white-space: pre-wrap; margin-top: 6px; }
+
+        .footer {
+            background:
+                linear-gradient(135deg, rgba(10,5,8,0.82) 0%, rgba(30,10,15,0.88) 100%),
+                url('/tartan-bg.png') center/cover no-repeat;
+            color: rgba(255,255,255,0.75);
+            text-align: center;
+            padding: 28px 40px;
+            font-family: 'Open Sans', sans-serif;
+            font-size: 0.82em;
+            letter-spacing: 1px;
+            margin-top: 40px;
+        }
+        .footer span { color: #e8a0ac; font-weight: 700; }
+    </style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+    <div class="topbar-brand">
+        <img src="/scotty-shield.png" class="topbar-logo" alt="CMU Scotty" />
+        <div>
+            <div class="topbar-title">Tartan Tuesday</div>
+            <div class="topbar-subtitle">Comparison Dashboard</div>
+        </div>
+    </div>
+    <div class="topbar-right">
+        <a href="/" class="topbar-nav-link secondary">← Back to App</a>
+        <a href="/charts" class="topbar-nav-link primary">Charts</a>
+    </div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+    <div class="hero-inner">
+        <h1>Fiscal Year Comparison</h1>
+        <p>Weekly student participation across all semesters</p>
+    </div>
+</div>
+
+<!-- BODY -->
+<div class="page-body" id="page-body">
+    <!-- Stats row -->
+    <div class="stat-row" id="stat-row">
+        <div class="stat-card"><div class="stat-val" id="s-years">—</div><div class="stat-lbl">Semesters Tracked</div></div>
+        <div class="stat-card"><div class="stat-val" id="s-weeks">—</div><div class="stat-lbl">Weeks of Data</div></div>
+        <div class="stat-card"><div class="stat-val" id="s-peak">—</div><div class="stat-lbl">Peak Single Week</div></div>
+        <div class="stat-card"><div class="stat-val" id="s-avg">—</div><div class="stat-lbl">Avg Students / Week</div></div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls-bar" id="controls-bar" style="display:none">
+        <span class="controls-label">Chart type</span>
+        <div class="chart-type-btns">
+            <button class="chart-type-btn active" id="btn-line" onclick="switchChart('line')">Line</button>
+            <button class="chart-type-btn" id="btn-bar" onclick="switchChart('bar')">Bar</button>
+        </div>
+        <div class="divider"></div>
+        <span class="controls-label">Semesters</span>
+        <div class="legend-toggles" id="legend-toggles"></div>
+    </div>
+
+    <!-- Main chart -->
+    <div class="chart-card" id="main-card" style="display:none">
+        <div class="chart-card-header">
+            <div>
+                <div class="chart-card-title">Students per Week — All Semesters</div>
+                <div class="chart-card-subtitle" id="main-subtitle"></div>
+            </div>
+        </div>
+        <div class="chart-wrap">
+            <canvas id="mainChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Mini charts row: Peak only -->
+    <div class="mini-row" id="mini-row" style="display:none; grid-template-columns: 1fr;">
+        <div class="mini-chart-card">
+            <div class="chart-card-header" style="margin-bottom:14px">
+                <div>
+                    <div class="chart-card-title" style="font-size:0.9em">Peak Week per Semester</div>
+                    <div class="chart-card-subtitle">Highest single-week attendance per semester</div>
+                </div>
+            </div>
+            <div class="mini-chart-wrap"><canvas id="peakChart"></canvas></div>
+        </div>
+    </div>
+
+    <!-- Total students — full-width standalone card -->
+    <div class="chart-card" id="total-card" style="display:none; margin-bottom:24px;">
+        <div class="chart-card-header">
+            <div>
+                <div class="chart-card-title">Total Students per Semester</div>
+                <div class="chart-card-subtitle" id="total-subtitle">Cumulative unique student attendance across all weeks</div>
+            </div>
+        </div>
+        <div class="chart-wrap" style="height:320px;"><canvas id="totalChart"></canvas></div>
+    </div>
+
+    <!-- Data table -->
+    <div class="table-card" id="table-card" style="display:none">
+        <h2>Raw Data — Weekly Breakdown</h2>
+        <div style="overflow-x:auto">
+            <table class="data-table" id="data-table">
+                <thead id="table-head"></thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Loading / error state -->
+    <div class="state-overlay" id="state-overlay">
+        <div class="spinner"></div>
+        <h3>Loading comparison data...</h3>
+        <p>Fetching from Google Sheets</p>
+    </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">© <span>Ananya Shrimali</span> · Tartan Tuesday · Carnegie Mellon University</div>
+
+<script>
+// ── PALETTE (alternating CMU red shades + complementary colors) ──
+const PALETTE = [
+    { line: '#9B1B30', fill: 'rgba(155,27,48,0.12)',   point: '#9B1B30' },
+    { line: '#2563eb', fill: 'rgba(37,99,235,0.10)',   point: '#2563eb' },
+    { line: '#16a34a', fill: 'rgba(22,163,74,0.10)',   point: '#16a34a' },
+    { line: '#d97706', fill: 'rgba(217,119,6,0.10)',   point: '#d97706' },
+    { line: '#7c3aed', fill: 'rgba(124,58,237,0.10)',  point: '#7c3aed' },
+    { line: '#0891b2', fill: 'rgba(8,145,178,0.10)',   point: '#0891b2' },
+    { line: '#be185d', fill: 'rgba(190,24,93,0.10)',   point: '#be185d' },
+    { line: '#065f46', fill: 'rgba(6,95,70,0.10)',     point: '#065f46' },
+];
+
+let mainChart = null;
+let peakChart = null;
+let totalChart = null;
+let chartData = null;   // { labels, datasets: [{label, data}] }
+let hiddenSets = new Set();
+let currentType = 'line';
+
+async function loadData() {
+    try {
+        const res = await fetch('/api/comparison');
+        const json = await res.json();
+
+        if (json.error) {
+            showError(json.error);
+            return;
+        }
+        if (!json.headers || json.headers.length < 2 || !json.rows || json.rows.length === 0) {
+            showError('No data found in the Data Comparison sheet.\nMake sure the sheet has headers in row 1 and data starting row 2.');
+            return;
+        }
+
+        processAndRender(json);
+    } catch (err) {
+        showError('Could not reach the server: ' + err.message);
+    }
+}
+
+function processAndRender(json) {
+    const headers = json.headers;  // e.g. ["Week", "Fall 2022", "Spring 2023", "Fall 2023", ...]
+    const rows = json.rows;
+
+    // First column = week labels, rest = semesters
+    const semesterHeaders = headers.slice(1);
+
+    // ── Step 1: keyword match (broad) ──
+    const totalKeyword = r => /total|grand|sum|annual|yearly|fy\s*total|semester\s*total|overall/i.test(String(r[0] || '').trim());
+
+    // ── Step 2: statistical outlier — a row whose column values are ≥ the
+    //    sum of ALL other rows in that column is almost certainly a totals row.
+    //    We check every numeric column: if ANY column value ≥ sum of the rest → flag it.
+    const numCols = headers.slice(1).length;
+    const colSums = Array(numCols).fill(0);
+    rows.forEach(r => {
+        for (let c = 0; c < numCols; c++) {
+            const v = Number(r[c + 1]);
+            if (!isNaN(v)) colSums[c] += v;
+        }
+    });
+    const isOutlierRow = r => {
+        for (let c = 0; c < numCols; c++) {
+            const v = Number(r[c + 1]);
+            if (!isNaN(v) && v > 0 && colSums[c] > 0 && v >= colSums[c] * 0.6) return true;
+        }
+        return false;
+    };
+
+    const isTotalRow = r => totalKeyword(r) || isOutlierRow(r);
+    const weekRows  = rows.filter(r => !isTotalRow(r));
+    const totalRows = rows.filter(r =>  isTotalRow(r));
+
+    const weekLabels = weekRows.map(r => String(r[0] || ''));
+
+    const datasets = semesterHeaders.map((name, si) => {
+        const data = weekRows.map(r => {
+            const v = r[si + 1];
+            if (v === null || v === undefined || v === '') return null;
+            const n = Number(v);
+            return isNaN(n) ? null : n;
+        });
+        return { label: String(name), data };
+    });
+
+    // Totals: prefer the explicit Total row from the sheet; fall back to computing from weekly data
+    let totalsPerSemester;
+    if (totalRows.length > 0) {
+        totalsPerSemester = semesterHeaders.map((_, si) => {
+            const v = totalRows[0][si + 1];
+            const n = Number(v);
+            return isNaN(n) ? 0 : n;
+        });
+    } else {
+        totalsPerSemester = datasets.map(ds =>
+            ds.data.filter(v => v !== null).reduce((a, b) => a + b, 0)
+        );
+    }
+
+    chartData = { labels: weekLabels, datasets, totalsPerSemester };
+
+    // Summary stats (only weekly rows, no totals row inflating peak/avg)
+    const allVals = datasets.flatMap(d => d.data.filter(v => v !== null));
+    const peak = allVals.length ? Math.max(...allVals) : 0;
+    const avg  = allVals.length ? Math.round(allVals.reduce((a, b) => a + b, 0) / allVals.length) : 0;
+
+    document.getElementById('s-years').textContent = datasets.length;
+    document.getElementById('s-weeks').textContent = weekLabels.length;
+    document.getElementById('s-peak').textContent  = peak;
+    document.getElementById('s-avg').textContent   = avg;
+    document.getElementById('main-subtitle').textContent =
+        `${weekLabels.length} weeks · ${datasets.length} semester${datasets.length !== 1 ? 's' : ''}`;
+
+    // Hide loading, show UI
+    document.getElementById('state-overlay').style.display = 'none';
+    document.getElementById('controls-bar').style.display = 'flex';
+    document.getElementById('main-card').style.display    = 'block';
+    document.getElementById('mini-row').style.display     = 'grid';
+    document.getElementById('total-card').style.display   = 'block';
+    document.getElementById('table-card').style.display   = 'block';
+
+    buildLegendToggles();
+    renderMainChart();
+    renderPeakChart();
+    renderTotalChart();
+    buildTable();
+}
+
+function buildLegendToggles() {
+    const container = document.getElementById('legend-toggles');
+    container.innerHTML = '';
+    chartData.datasets.forEach((ds, i) => {
+        const color = PALETTE[i % PALETTE.length].line;
+        const chip = document.createElement('div');
+        chip.className = 'legend-chip';
+        chip.style.borderColor = color;
+        chip.style.color = color;
+        chip.innerHTML = `<div class="dot" style="background:${color}"></div>${ds.label}`;
+        chip.addEventListener('click', () => {
+            if (hiddenSets.has(i)) {
+                hiddenSets.delete(i);
+                chip.classList.remove('muted');
+            } else {
+                hiddenSets.add(i);
+                chip.classList.add('muted');
+            }
+            updateMainChartVisibility();
+        });
+        container.appendChild(chip);
+    });
+}
+
+function buildChartDatasets(type) {
+    return chartData.datasets.map((ds, i) => {
+        const c = PALETTE[i % PALETTE.length];
+        const base = {
+            label: ds.label,
+            data: ds.data,
+            borderColor: c.line,
+            backgroundColor: type === 'line' ? c.fill : c.line,
+            pointBackgroundColor: c.point,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            borderWidth: 2.5,
+            tension: 0.35,
+            spanGaps: true,
+            hidden: hiddenSets.has(i),
+        };
+        if (type === 'bar') {
+            base.borderRadius = 5;
+            base.borderSkipped = false;
+        } else {
+            base.fill = false;
+        }
+        return base;
+    });
+}
+
+function renderMainChart() {
+    const ctx = document.getElementById('mainChart').getContext('2d');
+    if (mainChart) mainChart.destroy();
+
+    mainChart = new Chart(ctx, {
+        type: currentType,
+        data: {
+            labels: chartData.labels,
+            datasets: buildChartDatasets(currentType),
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1a1a1a',
+                    titleColor: '#fff',
+                    bodyColor: '#ccc',
+                    padding: 14,
+                    cornerRadius: 8,
+                    callbacks: {
+                        title: items => `${items[0].label}`,
+                        label: item => {
+                            const v = item.raw;
+                            return `  ${item.dataset.label}: ${v !== null ? v + ' students' : '—'}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: '#f0f0f0' },
+                    ticks: { color: '#888', font: { size: 11, weight: '600' } },
+                    border: { color: '#e8e8e8' }
+                },
+                y: {
+                    grid: { color: '#f0f0f0' },
+                    ticks: { color: '#888', font: { size: 11, weight: '600' }, stepSize: 5 },
+                    border: { color: '#e8e8e8' },
+                    beginAtZero: true,
+                    title: { display: true, text: 'Students', color: '#888', font: { size: 11, weight: '700' } }
+                }
+            }
+        }
+    });
+}
+
+function updateMainChartVisibility() {
+    if (!mainChart) return;
+    mainChart.data.datasets.forEach((ds, i) => {
+        mainChart.setDatasetVisibility(i, !hiddenSets.has(i));
+    });
+    mainChart.update();
+}
+
+function renderPeakChart() {
+    const ctx = document.getElementById('peakChart').getContext('2d');
+    if (peakChart) peakChart.destroy();
+
+    const peaks = chartData.datasets.map(ds => {
+        const vals = ds.data.filter(v => v !== null);
+        return vals.length ? Math.max(...vals) : 0;
+    });
+
+    peakChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: chartData.datasets.map(d => d.label),
+            datasets: [{
+                data: peaks,
+                backgroundColor: chartData.datasets.map((_, i) => PALETTE[i % PALETTE.length].line),
+                borderRadius: 6,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1a1a1a', titleColor: '#fff', bodyColor: '#ccc',
+                    padding: 12, cornerRadius: 8,
+                    callbacks: { label: item => `  Peak: ${item.raw} students` }
+                }
+            },
+            scales: {
+                x: { grid: { display: false }, ticks: { color: '#888', font: { size: 10, weight: '600' } }, border: { color: '#e8e8e8' } },
+                y: { grid: { color: '#f0f0f0' }, ticks: { color: '#888', font: { size: 10 } }, beginAtZero: true, border: { color: '#e8e8e8' } }
+            }
+        }
+    });
+}
+
+function renderTotalChart() {
+    const ctx = document.getElementById('totalChart').getContext('2d');
+    if (totalChart) totalChart.destroy();
+
+    const totals = chartData.totalsPerSemester;
+    const semLabels = chartData.datasets.map(d => d.label);
+
+    totalChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: semLabels,
+            datasets: [{
+                label: 'Total Students',
+                data: totals,
+                backgroundColor: chartData.datasets.map((_, i) => PALETTE[i % PALETTE.length].line),
+                borderRadius: 8,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1a1a1a', titleColor: '#fff', bodyColor: '#ccc',
+                    padding: 14, cornerRadius: 8,
+                    callbacks: {
+                        title: items => items[0].label,
+                        label: item => `  Total: ${item.raw.toLocaleString()} students`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#555', font: { size: 12, weight: '700' } },
+                    border: { color: '#e8e8e8' }
+                },
+                y: {
+                    grid: { color: '#f0f0f0' },
+                    ticks: { color: '#888', font: { size: 11 }, callback: v => v.toLocaleString() },
+                    beginAtZero: true,
+                    border: { color: '#e8e8e8' },
+                    title: { display: true, text: 'Total Students', color: '#888', font: { size: 11, weight: '700' } }
+                }
+            }
+        }
+    });
+}
+
+function buildTable() {
+    const { labels, datasets } = chartData;
+
+    // Find column max for bar-in-cell
+    const colMax = datasets.map(ds => {
+        const vals = ds.data.filter(v => v !== null);
+        return vals.length ? Math.max(...vals) : 1;
+    });
+
+    // Header
+    const thead = document.getElementById('table-head');
+    let hRow = '<tr><th>Week</th>';
+    datasets.forEach((ds, i) => {
+        const c = PALETTE[i % PALETTE.length].line;
+        hRow += `<th style="color:${c}">${ds.label}</th>`;
+    });
+    hRow += '</tr>';
+    thead.innerHTML = hRow;
+
+    // Body
+    const tbody = document.getElementById('table-body');
+    let html = '';
+    labels.forEach((week, ri) => {
+        html += `<tr><td>${week}</td>`;
+        datasets.forEach((ds, ci) => {
+            const v = ds.data[ri];
+            const color = PALETTE[ci % PALETTE.length].line;
+            if (v === null || v === undefined) {
+                html += `<td style="color:#ccc">—</td>`;
+            } else {
+                const pct = Math.round((v / colMax[ci]) * 100);
+                html += `<td>
+                    <div class="cell-bar">
+                        <span style="font-weight:700;min-width:28px;text-align:right">${v}</span>
+                        <div class="cell-bar-fill" style="width:${Math.max(pct, 4)}%;background:${color}"></div>
+                    </div>
+                </td>`;
+            }
+        });
+        html += '</tr>';
+    });
+    tbody.innerHTML = html;
+}
+
+function switchChart(type) {
+    currentType = type;
+    document.getElementById('btn-line').classList.toggle('active', type === 'line');
+    document.getElementById('btn-bar').classList.toggle('active', type === 'bar');
+    renderMainChart();
+    // Restore hidden state
+    updateMainChartVisibility();
+}
+
+function showError(msg) {
+    document.getElementById('state-overlay').innerHTML = `
+        <div class="error-box">
+            <strong style="color:#9B1B30">Could not load data</strong>
+            <pre>${msg}</pre>
+        </div>
+        <p style="max-width:420px;text-align:center;line-height:1.7">
+            Make sure the <strong>Code.gs</strong> has been re-deployed in Google Apps Script
+            and that there is a sheet named <strong>"Data Comparison"</strong> with headers in row 1.
+        </p>
+    `;
+}
+
+loadData();
+</script>
+</body>
+</html>

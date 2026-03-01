@@ -1,0 +1,14 @@
+{
+  "name": "tartan-tuesday-app",
+  "version": "1.0.0",
+  "description": "Tartan Tuesday Student Engagement Manager",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "express": "^4.21.0",
+    "express-session": "^1.19.0"
+  }
+}
