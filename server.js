@@ -6,16 +6,18 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.set('trust proxy', 1);
 app.use(express.json({ limit: '10mb' }));
 
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'fallback-dev-secret',
+    secret: process.env.SESSION_SECRET || 'tartan-tuesday-default-secret',
     resave: false,
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 1000 * 60 * 60 * 12 // 12 hours
+        sameSite: process.env.NODE_ENV === 'production' ? 'lax' : false,
+        maxAge: 1000 * 60 * 60 * 12
     }
 }));
 
